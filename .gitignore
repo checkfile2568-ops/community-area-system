@@ -1,0 +1,6 @@
+.clasp.json
+apps-script/
+.env
+.env.*
+!.env.example
+
