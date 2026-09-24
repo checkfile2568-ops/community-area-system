@@ -4,14 +4,13 @@
 
 ## สถานะ
 
-หน้า GitHub Pages ถูกจัดเตรียมไว้เพื่อใช้เป็น origin ที่อนุญาตของ Google OAuth Client เท่านั้น
+หน้า GitHub Pages เป็น origin ที่อนุญาตของ Google OAuth Web Client แล้ว และให้ผู้ใช้เริ่มยืนยันตัวตนด้วย Google ได้ โดยหน้าเว็บไม่ส่ง ID token ต่อ ไม่เก็บ token และไม่เรียกข้อมูลพื้นที่
 
 ก่อนเปิดรับข้อมูลจริง ต้องทำให้ครบ:
 
-1. สร้าง Google OAuth Web Client และเพิ่ม origin ของ GitHub Pages
-2. ใช้ backend verifier ที่ตรวจลายเซ็น ID token, issuer, audience และ expiry ด้วยไลบรารีมาตรฐาน
+1. ใช้ backend verifier ที่ตรวจลายเซ็น ID token, issuer, audience และ expiry ด้วยไลบรารีมาตรฐาน
+2. กำหนด allowlist/role ให้ผู้ใช้ใน backend และระหว่างช่วงทดสอบให้เพิ่มผู้ใช้เป็น OAuth test user ใน Google Cloud
 3. ให้ Apps Script รับคำขอจาก backend ที่เชื่อถือได้เท่านั้น และตรวจ role, active และพื้นที่ทุกครั้ง
-4. ทดสอบบัญชีที่อนุญาต, บัญชีที่ถูกระงับ และผู้ใช้ต่างพื้นที่
+4. ทดสอบบัญชีที่อนุญาต, บัญชีที่ถูกระงับ และผู้ใช้ต่างพื้นที่ รวมถึงการปฏิเสธการเรียก endpoint โดยตรง
 
 ห้ามใส่ Script ID, API key, token, รหัสผ่าน หรือข้อมูลพื้นที่จริงใน repository นี้
-
