@@ -36,6 +36,9 @@
     .status[aria-hidden="false"] { display:block; }
     .notice { margin:15px 0 0; color:#68788e; font-size:.85rem; }
     .notice strong { color:#3e536e; }
+    .portal-links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:19px; }
+    .portal-links a { display:block; padding:11px 12px; border:1px solid #cbdcec; border-radius:10px; color:var(--navy); background:#fff; font-size:.88rem; font-weight:750; text-decoration:none; }
+    .portal-links a:hover { border-color:var(--navy-2); }
     .safeguards { padding:clamp(25px,4vw,36px); }
     .safeguards > p { margin:11px 0 21px; color:var(--muted); }
     .guard { display:grid; grid-template-columns:32px 1fr; gap:12px; padding:15px 0; border-top:1px solid var(--line); }
@@ -46,6 +49,7 @@
     .footer { padding:21px 0 34px; color:#63738a; font-size:.82rem; text-align:center; }
     .footer span { color:var(--success); font-weight:800; }
     @media (max-width:780px) { .shell { width:min(100% - 28px,600px); } .topbar { padding-top:14px; } .classification { display:none; } main { padding-top:13px; } .grid { grid-template-columns:1fr; } .hero { border-radius:22px; } }
+    @media (max-width:430px) { .portal-links { grid-template-columns:1fr; } }
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -71,6 +75,7 @@
             <div id="google-button" aria-label="ปุ่มเข้าสู่ระบบด้วย Google"></div>
             <div id="signin-status" class="status" role="status" aria-hidden="true"></div>
             <p class="notice"><strong>หมายเหตุ:</strong> การลงชื่อเข้าใช้หน้านี้ยังไม่อนุญาตให้เข้าถึงข้อมูลพื้นที่ ระบบจะเปิดข้อมูลได้ต่อเมื่อ token ผ่านการตรวจสอบฝั่งเซิร์ฟเวอร์และบัญชีได้รับสิทธิ์เท่านั้น</p>
+            <nav class="portal-links" aria-label="ทางเข้าระบบและคู่มือ"><a href="./admin.html">ส่วนผู้ดูแลระบบ</a><a href="./user.html">ส่วนผู้ใช้งาน</a><a href="./admin-guide.html">คู่มือแอดมิน</a><a href="./user-guide.html">คู่มือผู้ใช้</a></nav>
           </div>
         </section>
         <aside class="panel safeguards" aria-labelledby="safeguards-title">
