@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex, nofollow"><meta name="referrer" content="strict-origin-when-cross-origin">
   <title>ส่วนผู้ดูแลระบบ | ระบบข้อมูลพื้นที่ชุมชน</title>
-  <link rel="stylesheet" href="./assets/portal.css"><script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="stylesheet" href="./assets/portal.css">
 </head>
 <body>
   <div class="shell">
@@ -11,13 +11,12 @@
     <main>
       <section class="masthead"><p class="eyebrow">Administrator Portal</p><h1>ส่วนผู้ดูแลระบบ</h1><p class="lead">หน้าควบคุมสำหรับผู้ที่ได้รับมอบหมายให้กำกับสิทธิ์และติดตามการใช้งาน ไม่ใช่หน้าข้อมูลสาธารณะ</p></section>
       <div class="columns">
-        <section class="card"><h2>ยืนยันตัวตนผู้ดูแล</h2><p class="muted">ใช้บัญชี Google ส่วนบุคคลหรือหน่วยงานที่ได้รับอนุมัติ ไม่ใช้ PIN ร่วมกัน</p><div class="signin"><h3>เข้าสู่ระบบด้วย Google</h3><div id="google-button" aria-label="ปุ่มเข้าสู่ระบบด้วย Google"></div><div id="identity-status" class="identity-status" role="status" data-visible="false"></div></div><div class="callout warning">ยังไม่มีการเชื่อมต่อ API ของข้อมูลพื้นที่จากหน้านี้ การยืนยันตัวตนที่แสดงเป็นเพียงขั้นตอนทดสอบ และไม่ถือเป็นการอนุญาตสิทธิ์</div></section>
+        <section class="card"><h2>ยืนยันตัวตนผู้ดูแล</h2><p class="muted">ใช้รหัสผ่านแอดมินที่ตั้งใน Google Sheet รหัสผ่านเก็บเป็น hash ใน Script Properties ไม่อยู่ในหน้าเว็บหรือในชีต</p><div class="signin"><h3>เข้าสู่ศูนย์ผู้ดูแล</h3><a class="button" href="https://script.google.com/macros/s/AKfycbyE-xWVkInkMbl0Y8fuVAIJ3e06q2wlHDHsCwTUkh2AoMFJWovkaqBkoLnKudE6gcvmTQ/exec?page=admin">เปิดหน้าผู้ดูแลระบบ</a></div><div class="callout warning">ห้ามใช้รหัสแอดมินร่วมกัน หากสงสัยว่าอุปกรณ์สูญหาย ให้ยกเลิก session ของทุกคนจากเมนูใน Google Sheet</div></section>
         <aside class="card"><h2>ขอบเขตผู้ดูแล</h2><ol class="list"><li><span class="number">1</span><div><h3>กำหนดสิทธิ์</h3><p>เพิ่ม ระงับ หรือเปลี่ยนบทบาทเมื่อ backend พร้อมตรวจสิทธิ์บนเซิร์ฟเวอร์</p></div></li><li><span class="number">2</span><div><h3>ตรวจทานบันทึก</h3><p>ติดตามการเข้าใช้และคำขอข้อมูลโดยไม่แสดงข้อมูลเกินความจำเป็น</p></div></li><li><span class="number">3</span><div><h3>ควบคุมการส่งออก</h3><p>อนุญาตเฉพาะเมื่อมีฐานอำนาจและวัตถุประสงค์ที่ชัดเจน</p></div></li></ol><div class="guide"><a href="./admin-guide.html">เปิดคู่มือผู้ดูแลระบบ →</a></div></aside>
       </div>
       <div class="button-row"><a class="button secondary" href="./user.html">ไปยังหน้าผู้ใช้</a><a class="button secondary" href="./">กลับหน้าแรก</a></div>
     </main>
-    <footer class="footer">ใช้สำหรับการทดสอบระบบเท่านั้น &middot; ไม่มีข้อมูลพื้นที่หรือบ้านเลขที่บนหน้านี้</footer>
+    <footer class="footer">ใช้สำหรับการทดสอบระบบเท่านั้น &middot; สิทธิ์ผู้ใช้และ PIN จัดการจากศูนย์ผู้ดูแลระบบ</footer>
   </div>
-  <script src="./assets/identity-display.js"></script>
 </body>
 </html>

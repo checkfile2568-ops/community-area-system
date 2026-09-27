@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0E2A47">
+<title>ลงพิกัดบ้าน — กำนัน/ผู้ใหญ่บ้าน</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   ระบบลงพิกัดบ้านโดยกำนัน/ผู้ใหญ่บ้าน — รุ่นเต็ม (ต่อ Google Sheets)
+   เข้าด้วยรหัสผู้ใช้และ PIN ที่ผู้ดูแลกำหนด (ไม่ใช้รหัสใน URL)
+   ===================================================================== */
+:root{
+  --navy:#0E2A47; --navy2:#1B4E85; --gold:#F0A800; --green:#22A85A; --orange:#E8820C;
+  --purple:#7B4DD3; --blue:#2A6DF4; --red:#C4562F; --ink:#12212F; --muted:#657687;
+  --line:#E1E7EE; --paper:#F6F8FB; --sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:"TH Sarabun New","Sarabun",system-ui,sans-serif;font-size:20px;color:var(--ink);
+     background:#fff;display:flex;flex-direction:column}
+button,input,select{font-family:inherit;font-size:1rem;color:inherit}
+button{border:0;background:none;cursor:pointer}
+
+.hd{background:var(--navy);color:#fff;display:flex;align-items:center;gap:8px;
+    padding:calc(env(safe-area-inset-top,0px) + 11px) 12px 11px}
+.hd .t{font-weight:700;font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd .who{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);
+    border-radius:999px;padding:4px 12px 4px 4px;max-width:56%}
+.hd .who i{width:32px;height:32px;flex:0 0 32px;border-radius:99px;background:var(--gold);color:#3A2A00;
+    display:grid;place-items:center;font-style:normal;font-weight:700}
+.hd .who span{font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.sr{display:flex;gap:8px;padding:10px 12px 6px;background:#fff}
+.sr .box{flex:1;display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);
+    border-radius:14px;padding:10px 14px}
+.sr input{flex:1;min-width:0;border:0;outline:none;background:none;font-size:1rem}
+.sr .go{width:52px;flex:0 0 52px;border-radius:14px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:1.15rem}
+.chips{display:flex;gap:8px;padding:2px 12px 8px;overflow-x:auto;background:#fff;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1.6px solid var(--line);border-radius:999px;padding:7px 15px;font-size:.92rem;
+    background:#fff;color:var(--muted);white-space:nowrap}
+.chip.on{border-color:var(--navy2);color:var(--navy);font-weight:600;background:#EEF4FC}
+
+.stat{display:flex;align-items:center;gap:7px;padding:7px 12px;background:var(--paper);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+.stat .dot{width:9px;height:9px;border-radius:99px;background:var(--green)}
+.stat.off .dot{background:var(--red)}
+.stat .n{color:var(--navy);font-weight:700}
+.stat .q{color:var(--orange);font-weight:700}
+.stat .when{margin-left:auto;white-space:nowrap;font-size:.8rem}
+
+.wrap{position:relative;flex:1;min-height:0}
+#map{position:absolute;inset:0}
+
+.fabs{position:absolute;right:12px;bottom:14px;z-index:5;display:flex;flex-direction:column;gap:11px}
+.fab{width:56px;height:56px;border-radius:99px;display:grid;place-items:center;font-size:1.4rem;color:#fff;
+    box-shadow:0 6px 18px rgba(10,25,45,.32);position:relative}
+.fab.layer{background:#fff;color:var(--navy)}
+.fab.list{background:var(--purple)}
+.fab.add{background:var(--green)}
+.fab.geo{background:var(--navy)}
+.fab:active{transform:scale(.93)}
+.fab .bdg{position:absolute;top:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:99px;
+    min-width:24px;height:24px;font-size:.78rem;display:grid;place-items:center;border:2px solid #fff;padding:0 5px}
+.menu{position:absolute;right:76px;bottom:150px;z-index:6;background:#fff;border-radius:16px;padding:6px;
+    box-shadow:0 14px 34px rgba(10,25,45,.32);display:none;max-width:76vw}
+.menu.on{display:block}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border-radius:12px;white-space:nowrap}
+.menu button.on{background:#EEF4FC;font-weight:600;color:var(--navy)}
+
+.pin{transform:translate(-50%,-100%);cursor:pointer;display:flex;flex-direction:column;align-items:center;
+    filter:drop-shadow(0 3px 6px rgba(10,25,45,.45))}
+.pin .lab{background:#fff;border:2.5px solid var(--green);color:#0C6B38;font-weight:700;font-size:.95rem;
+    padding:3px 11px;border-radius:10px;white-space:nowrap}
+.pin .tip{width:2.5px;height:11px;background:var(--green)}
+.pin.wait .lab{border-color:var(--orange);color:#8A4D00}
+.pin.wait .tip{background:var(--orange)}
+.pin.queue .lab{border-style:dashed;border-color:var(--muted);color:var(--muted)}
+.pin.queue .tip{background:var(--muted)}
+.pin.other .lab{border-color:var(--blue);color:#12439E}
+.pin.other .tip{background:var(--blue)}
+.pin.hot .lab{background:var(--gold);border-color:#9A6E00;color:#3A2A00;transform:scale(1.08)}
+.me{width:18px;height:18px;border-radius:99px;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 7px rgba(42,109,244,.22)}
+
+.maplibregl-popup-content{padding:0;border-radius:18px;overflow:hidden;box-shadow:0 18px 44px rgba(10,25,45,.42)}
+.pop{width:290px;max-width:78vw}
+.pop .h{background:var(--navy);color:#fff;padding:11px 16px;font-weight:700}
+.pop .b{background:#fff;padding:14px 16px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.tagmoo{flex:0 0 auto;background:var(--gold);color:#3A2A00;font-weight:700;border-radius:11px;padding:11px 12px;white-space:nowrap}
+.pop input{flex:1;width:100%;min-width:0;padding:12px 13px;border:2px solid var(--line);border-radius:12px;outline:none}
+.pop input:focus{border-color:var(--navy2);background:#F7FAFF}
+.pop input.big{font-weight:700;font-size:1.15rem}
+.acts{display:flex;gap:8px}
+.acts button{flex:1;padding:13px;border-radius:12px;font-weight:700;background:#EAEFF5;color:var(--navy)}
+.acts .save{background:var(--green);color:#fff}
+.acts .del{flex:0 0 52px;background:#FCE9E3;color:var(--red)}
+.kv{margin-bottom:8px;line-height:1.35}
+.kv span{color:var(--muted);font-size:.88rem}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.82rem;font-weight:600}
+.badge.ok{background:#E3F6EB;color:#0C6B38}
+.badge.wait{background:#FDF0DE;color:#8A4D00}
+.badge.queue{background:#EEF2F7;color:var(--muted)}
+
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:8;max-height:74%;background:#fff;
+    border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(10,25,45,.28);display:none;flex-direction:column}
+.sheet.on{display:flex}
+.sheet .sh{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sheet .sh b{font-size:1.02rem;color:var(--navy)}
+.sheet .sh button{margin-left:auto;width:34px;height:34px;border-radius:10px;background:#EEF2F7}
+.sheet .sb{overflow-y:auto;padding:8px 12px calc(16px + var(--sb))}
+.it{display:flex;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it b{background:var(--green);color:#fff;border-radius:9px;padding:3px 11px;font-size:.95rem;white-space:nowrap}
+.it.wait b{background:var(--orange)} .it.queue b{background:var(--muted)} .it.other b{background:var(--blue)}
+.it .m{flex:1;min-width:0}
+.it .m div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it small{color:var(--muted)}
+.none{padding:26px 12px;text-align:center;color:var(--muted)}
+
+.setup{position:fixed;inset:0;z-index:40;background:var(--navy);color:#fff;display:none;
+    flex-direction:column;justify-content:center;padding:26px;gap:12px}
+.setup.on{display:flex}
+.setup h2{margin:0;font-size:1.3rem}
+.setup p{margin:0;opacity:.8;font-size:.95rem;line-height:1.45}
+.setup input{padding:14px;border-radius:14px;border:0;outline:none;font-size:1.05rem}
+.setup button{padding:14px;border-radius:14px;background:var(--gold);color:#3A2A00;font-weight:700}
+
+.toast{position:fixed;left:50%;transform:translate(-50%,16px);bottom:calc(92px + var(--sb));z-index:30;
+    background:#12212F;color:#fff;padding:11px 20px;border-radius:999px;opacity:0;transition:.22s;pointer-events:none;
+    max-width:86vw;text-align:center}
+.toast.on{opacity:.96;transform:translate(-50%,0)}
+.maplibregl-ctrl-attrib{font-size:10px !important}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <span class="t" id="hTitle">📍 ลงพิกัดบ้าน</span>
+  <div class="who" id="who"><i>?</i><span>ยังไม่ระบุผู้ใช้</span></div>
+</div>
+
+<div class="sr">
+  <div class="box"><span>🔍</span><input id="q" type="search" placeholder="ค้นหาบ้านเลขที่ / ชื่อเจ้าบ้าน" autocomplete="off"></div>
+  <button class="go" id="btnGo">🔎</button>
+</div>
+<div class="chips">
+  <button class="chip on" data-b="sat">🛰️ ภาพถ่ายดาวเทียม</button>
+  <button class="chip" data-b="road">🗺️ แผนที่ถนน</button>
+  <button class="chip on" id="chipLab">🏷️ แสดงเลขที่บ้าน</button>
+  <button class="chip" id="chipMine">👤 เฉพาะที่ฉันลง</button>
+</div>
+<div class="stat" id="stat">
+  <span class="dot"></span><span id="netTxt">กำลังเชื่อมต่อ…</span>
+  <span>| ลงแล้ว <span class="n" id="cnt">0</span></span>
+  <span id="qWrap" style="display:none">| ค้างส่ง <span class="q" id="qn">0</span></span>
+  <span class="when" id="when">—</span>
+</div>
+
+<div class="wrap">
+  <div id="map"></div>
+  <div class="menu" id="menu"></div>
+  <div class="fabs">
+    <button class="fab layer" id="fLayer" title="เมนู">☰</button>
+    <button class="fab list" id="fList" title="รายการบ้าน">📋</button>
+    <button class="fab add" id="fAdd" title="ลงพิกัดที่ตำแหน่งฉัน">＋</button>
+    <button class="fab geo" id="fGeo" title="ไปตำแหน่งฉัน">➤</button>
+  </div>
+  <div class="sheet" id="sheet">
+    <div class="sh"><b>รายการบ้านที่ลงไว้</b><button id="shX">✕</button></div>
+    <div class="sb" id="shBody"></div>
+  </div>
+</div>
+
+<div class="setup" id="setup">
+  <h2>เริ่มใช้งาน</h2>
+  <p>ใส่รหัสผู้ใช้และ PIN ที่ได้รับจากผู้ดูแลระบบ<br>ระบบจะจำเฉพาะ session ของเครื่องนี้ชั่วคราว</p>
+  <input id="uApi" placeholder="URL ของ Apps Script (ลงท้าย /exec)" style="display:none">
+  <input id="uCode" placeholder="รหัสผู้ใช้ เช่น M10TK" autocapitalize="characters">
+  <input id="uPin" type="password" inputmode="numeric" placeholder="PIN 6–12 หลัก" autocomplete="current-password">
+  <button id="uGo">เข้าใช้งาน</button>
+  <p id="uErr" style="color:#FFC9B6"></p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+/* =====================================================================
+   ⚙️ ตั้งค่า
+   - API: URL ของ Apps Script Web App (ลงท้าย /exec)
+   - ไม่ส่งรหัสผ่าน/PIN ใน URL และไม่เก็บ PIN ในเครื่อง
+   ===================================================================== */
+const APP_VER = '1.1';
+const API_DEFAULT = 'https://script.google.com/macros/s/AKfycbyE-xWVkInkMbl0Y8fuVAIJ3e06q2wlHDHsCwTUkh2AoMFJWovkaqBkoLnKudE6gcvmTQ/exec';
+const HOME = [100.6065, 14.8402];          // จุดกึ่งกลางสำรอง (ย่านท่าแค)
+const K = 'coj_pin_v1';                    // prefix ของ localStorage
+
+/* ---------------------------------------------------------------------
+   🔧 จุดต่อยอด #1 — ช่องข้อมูลเพิ่มเติม
+   เพิ่มบรรทัดในอาร์เรย์นี้ ฟอร์มลงพิกัด/แก้ไข/รายละเอียด/ส่งออก
+   จะรองรับให้เองทั้งหมด ไม่ต้องแก้โค้ดส่วนอื่น
+   type: 'text' | 'tel' | 'number' | 'select'
+   --------------------------------------------------------------------- */
+const EXTRA = [
+  // { key:'type',   label:'ประเภทบ้าน', type:'select', options:['บ้านเดี่ยว','ห้องเช่า','ร้านค้า','บ้านร้าง'] },
+  // { key:'phone',  label:'เบอร์โทร',   type:'tel' },
+  // { key:'people', label:'จำนวนผู้อยู่อาศัย', type:'number' },
+  // { key:'zone',   label:'เขต/คุ้ม',   type:'text' }
+];
+
+/* ---------- สถานะแอป ---------- */
+let USER = null;                 // {code,name,role,moo,tambon,lat,lng}
+let DATA = [];                   // จุดที่แสดงบนแผนที่ (server + local)
+let QUEUE = ls('queue', []);     // คิวรอส่ง เมื่อเน็ตกลับมา
+let online = navigator.onLine;
+
+function ls(k, d){ try{ return JSON.parse(localStorage.getItem(K+'_'+k)) ?? d; }catch(e){ return d; } }
+function ss(k, v){ try{ localStorage.setItem(K+'_'+k, JSON.stringify(v)); }catch(e){} }
+
+let API = API_DEFAULT || ls('api','') || '';
+
+/* ---- ช่องข้อมูลเพิ่มเติม (ตาม EXTRA) ---- */
+function extInputs(h){
+  return EXTRA.map(f=>{
+    const v = (h && h.ext && h.ext[f.key]) || '';
+    if(f.type==='select')
+      return `<div class="row"><select class="x-f" data-k="${f.key}">
+        <option value="">${esc(f.label)}…</option>
+        ${(f.options||[]).map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}
+      </select></div>`;
+    return `<div class="row"><input class="x-f" data-k="${f.key}" type="${f.type==='number'?'number':f.type==='tel'?'tel':'text'}"
+      placeholder="${esc(f.label)}" value="${esc(v)}"></div>`;
+  }).join('');
+}
+function extRead(){
+  const o={}; document.querySelectorAll('.x-f').forEach(el=>{ const v=el.value.trim(); if(v) o[el.dataset.k]=v; });
+  return o;
+}
+function extView(h){
+  if(!h.ext) return '';
+  return EXTRA.filter(f=>h.ext[f.key]).map(f=>
+    `<div class="kv"><span>${esc(f.label)}</span><br>${esc(h.ext[f.key])}</div>`).join('');
+}
+const uid=()=>'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tt=null;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600);}
+function beNow(d){d=d||new Date();const p=n=>String(n).padStart(2,'0');
+  return `${d.getDate()}/${d.getMonth()+1}/${(d.getFullYear()+543)%100} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+
+/* =====================================================================
+   1) เข้าสู่ระบบด้วยรหัสผู้ใช้ + PIN แล้วใช้ session ที่เซิร์ฟเวอร์ออกให้
+   ===================================================================== */
+let CODE = '';
+let TOKEN = sessionStorage.getItem(K+'_token') || '';
+
+function needApi(){
+  const box=document.getElementById('uApi');
+  box.style.display = API ? 'none' : 'block';
+  box.value = API || '';
+  return !API;
+}
+async function boot(){
+  if(!API || !TOKEN){ document.getElementById('setup').classList.add('on'); needApi(); return; }
+  const u = await api('config');
+  if(!u || !u.ok){ sessionStorage.removeItem(K+'_token'); TOKEN=''; document.getElementById('setup').classList.add('on'); return; }
+  USER = u.user; CODE=USER.code; ss('user',USER); startApp();
+}
+async function refreshUser(){ const u=await api('config'); if(u&&u.ok){ USER=u.user; CODE=USER.code; ss('user',USER); paintWho(); } }
+document.getElementById('uGo').onclick = async ()=>{
+  const a = document.getElementById('uApi').value.trim();
+  if(a){ API = a.replace(/\/+$/,''); ss('api', API); }
+  if(!API){ document.getElementById('uErr').textContent='ใส่ URL ของ Apps Script ก่อน'; needApi(); return; }
+  const c = document.getElementById('uCode').value.toUpperCase().trim();
+  const pin = document.getElementById('uPin').value.trim();
+  if(!c || !pin){ document.getElementById('uErr').textContent='กรอกรหัสผู้ใช้และ PIN'; return; }
+  document.getElementById('uErr').textContent='กำลังตรวจสอบ…';
+  const u = await api('auth_login', null, {code:c,pin:pin,token:''});
+  if(u&&u.ok){ CODE=c; TOKEN=u.token; sessionStorage.setItem(K+'_token',TOKEN); USER=u.user; ss('user',USER);
+    document.getElementById('uPin').value='';
+    document.getElementById('setup').classList.remove('on'); startApp(); }
+  else document.getElementById('uErr').textContent = (u&&u.error) || 'เข้าสู่ระบบไม่สำเร็จ';
+};
+document.getElementById('uCode').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('uGo').click(); });
+document.getElementById('uPin').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('uGo').click(); });
+
+/* =====================================================================
+   2) เรียก API (Apps Script)
+   ===================================================================== */
+async function api(action, params, body){
+  try{
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(Object.assign({action, token:TOKEN}, params||{}, body||{})) });
+    return await r.json();
+  }catch(e){ setNet(false); return null; }
+}
+function setNet(ok){
+  online = ok;
+  document.getElementById('stat').classList.toggle('off', !ok);
+  document.getElementById('netTxt').textContent = ok ? 'เชื่อมต่อแล้ว' : 'ออฟไลน์ — บันทึกไว้ในเครื่องก่อน';
+}
+window.addEventListener('online', ()=>{ setNet(true); flush(); });
+window.addEventListener('offline', ()=> setNet(false));
+
+/* =====================================================================
+   3) แผนที่
+   ===================================================================== */
+const TILES={
+  sat:{t:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],a:'Esri, Maxar',z:19},
+  road:{t:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],a:'© OpenStreetMap',z:19}
+};
+let base = ls('base','sat');
+const styleOf=k=>({version:8,sources:{b:{type:'raster',tiles:TILES[k].t,tileSize:256,attribution:TILES[k].a,maxzoom:TILES[k].z}},
+  layers:[{id:'b',type:'raster',source:'b'}]});
+let map=null, me=null, showLab=true, onlyMine=false;
+
+function startApp(){
+  document.getElementById('setup').classList.remove('on');
+  paintWho();
+  map = new maplibregl.Map({container:'map', style:styleOf(base),
+    center: (USER.lat&&USER.lng)?[USER.lng,USER.lat]:HOME, zoom:16.5, maxZoom:21, attributionControl:{compact:true}});
+  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-left');
+  map.addControl(new maplibregl.ScaleControl({maxWidth:80,unit:'metric'}),'bottom-left');
+  map.on('click', e=>{ closeMenu(); addAt([+e.lngLat.lng.toFixed(7), +e.lngLat.lat.toFixed(7)]); });
+  map.on('load', ()=>{ DATA = ls('cache', []); draw(); pull(); });
+  setNet(navigator.onLine);
+  setInterval(()=>{ if(QUEUE.length) flush(); }, 30000);
+}
+function paintWho(){
+  const n = USER?USER.name:'ยังไม่ระบุผู้ใช้';
+  document.getElementById('who').innerHTML = `<i>${esc((n.replace(/^(นาย|นาง|นางสาว)/,'').trim()[0])||'ก')}</i><span>${esc(n)}</span>`;
+  document.getElementById('hTitle').textContent = USER ? `📍 ลงพิกัดบ้าน หมู่ ${USER.moo} ต.${USER.tambon}` : '📍 ลงพิกัดบ้าน';
+}
+document.querySelectorAll('.chip[data-b]').forEach(c=>{
+  c.classList.toggle('on', c.dataset.b===base);
+  c.onclick=()=>{ base=c.dataset.b; ss('base',base);
+    document.querySelectorAll('.chip[data-b]').forEach(x=>x.classList.toggle('on',x===c));
+    map.setStyle(styleOf(base)); };
+});
+document.getElementById('chipLab').onclick=function(){ showLab=!showLab; this.classList.toggle('on',showLab); draw(); };
+document.getElementById('chipMine').onclick=function(){ onlyMine=!onlyMine; this.classList.toggle('on',onlyMine); draw(); };
+
+/* =====================================================================
+   4) หมุด
+   ===================================================================== */
+const marks=new Map();
+const mine = h => !h.by || h.by===USER.code;
+const cls  = h => h.pending ? 'queue' : (!mine(h) ? 'other' : (h.status==='ยืนยันแล้ว' ? '' : 'wait'));
+const shown = () => DATA.filter(h=>!h.deleted && (!onlyMine || mine(h)));
+
+function draw(){
+  const list = shown(), keep = new Set(list.map(h=>h.id));
+  for(const [id,m] of marks){ if(!keep.has(id)){ m.remove(); marks.delete(id); } }
+  list.forEach(h=>{
+    let m=marks.get(h.id);
+    if(!m){
+      const el=document.createElement('div'); el.className='pin';
+      el.innerHTML='<div class="lab"></div><div class="tip"></div>';
+      el.onclick=ev=>{ev.stopPropagation();detail(h.id);};
+      m=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([h.lng,h.lat]).addTo(map);
+      marks.set(h.id,m);
+    }
+    m.setLngLat([h.lng,h.lat]);
+    const el=m.getElement();
+    el.className='pin '+cls(h);
+    el.querySelector('.lab').textContent = showLab ? h.no : '●';
+  });
+  document.getElementById('cnt').textContent = DATA.filter(h=>!h.deleted).length;
+  document.getElementById('qn').textContent = QUEUE.length;
+  document.getElementById('qWrap').style.display = QUEUE.length ? '' : 'none';
+  const b=document.querySelector('#fLayer .bdg'); if(b) b.remove();
+  if(QUEUE.length) document.getElementById('fLayer').insertAdjacentHTML('beforeend',`<span class="bdg">${QUEUE.length}</span>`);
+  if(document.getElementById('sheet').classList.contains('on')) listAll();
+}
+const hot=(id,on)=>{const m=marks.get(id); if(m) m.getElement().classList.toggle('hot',on);};
+const nextNo=()=>{const n=DATA.filter(mine).map(h=>parseInt(h.no,10)).filter(x=>!isNaN(x));
+  return n.length?String(Math.max(...n)+1):'';};
+
+/* =====================================================================
+   5) ซิงก์: ดึง / ส่ง / คิวออฟไลน์
+   ===================================================================== */
+async function pull(silent){
+  const r = await api('list');
+  if(!r || !r.ok){ if(!silent) toast('ดึงข้อมูลจากส่วนกลางไม่ได้ — ใช้ข้อมูลในเครื่องก่อน'); return; }
+  setNet(true);
+  const local = new Map(DATA.filter(h=>h.pending).map(h=>[h.id,h]));   // ที่ยังไม่ขึ้นเซิร์ฟเวอร์
+  DATA = r.points.map(p=>Object.assign({}, p, {pending:false}));
+  for(const [id,h] of local) if(!DATA.some(x=>x.id===id)) DATA.push(h);
+  ss('cache', DATA); draw();
+  document.getElementById('when').textContent = 'อัปเดต '+beNow();
+}
+function enqueue(op, h){
+  QUEUE.push({op, h, t:Date.now()}); ss('queue', QUEUE); draw(); flush();
+}
+let flushing=false;
+async function flush(){
+  if(flushing || !QUEUE.length) return;
+  flushing=true;
+  const batch = QUEUE.slice(0,50);
+  const r = await api('sync', null, {items:batch});
+  flushing=false;
+  if(r && r.ok){
+    setNet(true);
+    QUEUE = QUEUE.slice(batch.length); ss('queue', QUEUE);
+    DATA.forEach(h=>{ if(batch.some(b=>b.h.id===h.id)) h.pending=false; });
+    ss('cache', DATA); draw();
+    if(!QUEUE.length){ toast('ส่งข้อมูลขึ้นส่วนกลางครบแล้ว'); pull(true); }
+    else flush();
+  }else{ setNet(false); }
+}
+
+/* =====================================================================
+   6) ลงพิกัด / แก้ไข
+   ===================================================================== */
+let pop=null; const closePop=()=>{ if(pop){pop.remove();pop=null;} };
+
+function addAt(ll){
+  closePop();
+  pop=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:14,maxWidth:'none'})
+    .setLngLat(ll).setHTML(`<div class="pop">
+      <div class="h">ลงพิกัดบ้าน — หมู่ ${esc(USER.moo)} ต.${esc(USER.tambon)}</div>
+      <div class="b">
+        <div class="row"><span class="tagmoo">บ้านเลขที่</span>
+          <input id="n-no" class="big" value="${nextNo()}" placeholder="เช่น 125/3"></div>
+        <div class="row"><input id="n-name" placeholder="ชื่อเจ้าบ้าน (ถ้ามี)"></div>
+        <div class="row"><input id="n-note" placeholder="รายละเอียด เช่น ข้างศาลาหมู่บ้าน"></div>
+        ${extInputs(null)}
+        <div class="acts"><button id="n-x">ยกเลิก</button><button class="save" id="n-ok">บันทึก</button></div>
+      </div></div>`).addTo(map);
+  const no=document.getElementById('n-no');
+  setTimeout(()=>{no.focus();no.select();},60);
+  document.getElementById('n-x').onclick=closePop;
+  const ok=()=>{
+    const v=no.value.trim();
+    if(!v){no.focus();toast('กรอกบ้านเลขที่ก่อน');return;}
+    if(DATA.some(h=>!h.deleted&&h.no===v&&h.moo===USER.moo)
+       && !confirm(`บ้านเลขที่ ${v} มีอยู่แล้ว — ลงเพิ่มอีกจุดหรือไม่?`)) return;
+    const h={ id:uid(), no:v, moo:USER.moo, tambon:USER.tambon, amphoe:USER.amphoe||'',
+      name:document.getElementById('n-name').value.trim(),
+      note:document.getElementById('n-note').value.trim(), ext:extRead(),
+      lat:ll[1], lng:ll[0], by:USER.code, byName:USER.name,
+      status:'รอตรวจสอบ', at:new Date().toISOString(), pending:true };
+    DATA.push(h); ss('cache',DATA); closePop(); draw(); enqueue('save',h);
+    toast('บันทึกบ้านเลขที่ '+v+' แล้ว'+(online?'':' (จะส่งอัตโนมัติเมื่อมีสัญญาณ)'));
+  };
+  document.getElementById('n-ok').onclick=ok;
+  ['n-no','n-name','n-note'].forEach(i=>document.getElementById(i)
+    .addEventListener('keydown',ev=>{if(ev.key==='Enter')ok();}));
+}
+
+function detail(id, fly){
+  const h=DATA.find(x=>x.id===id); if(!h) return;
+  closePop(); closeSheet();
+  if(fly) map.easeTo({center:[h.lng,h.lat],zoom:Math.max(map.getZoom(),18)});
+  const badge = h.pending ? '<span class="badge queue">รอส่งขึ้นระบบ</span>'
+    : h.status==='ยืนยันแล้ว' ? '<span class="badge ok">ยืนยันแล้ว</span>'
+    : '<span class="badge wait">รอเจ้าหน้าที่ตรวจสอบ</span>';
+  const own = mine(h);
+  pop=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:22,maxWidth:'none'})
+    .setLngLat([h.lng,h.lat]).setHTML(`<div class="pop">
+      <div class="h">บ้านเลขที่ ${esc(h.no)} หมู่ ${esc(h.moo)}</div>
+      <div class="b">
+        <div class="kv">${badge}</div>
+        ${h.name?`<div class="kv"><span>เจ้าบ้าน</span><br>${esc(h.name)}</div>`:''}
+        ${h.note?`<div class="kv"><span>รายละเอียด</span><br>${esc(h.note)}</div>`:''}
+        ${extView(h)}
+        <div class="kv"><span>${(+h.lat).toFixed(5)}, ${(+h.lng).toFixed(5)}
+          · ลงโดย ${esc(h.byName||'—')} ${beNow(new Date(h.at))}</span></div>
+        <div class="acts">
+          ${own?`<button class="del" id="d-x">🗑</button><button id="d-e">แก้ไข</button>`:''}
+          <button class="save" id="d-n">นำทาง</button></div>
+      </div></div>`).addTo(map);
+  hot(id,true); pop.on('close',()=>hot(id,false));
+  document.getElementById('d-n').onclick=()=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`,'_blank');
+  if(own){
+    document.getElementById('d-x').onclick=()=>{
+      if(!confirm(`ลบบ้านเลขที่ ${h.no}?`))return;
+      h.deleted=true; h.pending=true; ss('cache',DATA); closePop(); draw(); enqueue('delete',h); toast('ลบแล้ว');
+    };
+    document.getElementById('d-e').onclick=()=>edit(h);
+  }
+}
+function edit(h){
+  closePop();
+  pop=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:22,maxWidth:'none'})
+    .setLngLat([h.lng,h.lat]).setHTML(`<div class="pop">
+      <div class="h">แก้ไขข้อมูล</div>
+      <div class="b">
+        <div class="row"><span class="tagmoo">บ้านเลขที่</span><input id="e-no" class="big" value="${esc(h.no)}"></div>
+        <div class="row"><input id="e-name" placeholder="ชื่อเจ้าบ้าน" value="${esc(h.name||'')}"></div>
+        <div class="row"><input id="e-note" placeholder="รายละเอียด" value="${esc(h.note||'')}"></div>
+        ${extInputs(h)}
+        <div class="acts"><button id="e-x">ยกเลิก</button><button class="save" id="e-ok">บันทึก</button></div>
+      </div></div>`).addTo(map);
+  document.getElementById('e-x').onclick=()=>detail(h.id);
+  document.getElementById('e-ok').onclick=()=>{
+    const v=document.getElementById('e-no').value.trim();
+    if(!v){toast('กรอกบ้านเลขที่ก่อน');return;}
+    h.no=v; h.name=document.getElementById('e-name').value.trim();
+    h.note=document.getElementById('e-note').value.trim(); h.ext=extRead();
+    h.status='รอตรวจสอบ'; h.pending=true; h.at=h.at||new Date().toISOString();
+    ss('cache',DATA); closePop(); draw(); enqueue('save',h); toast('แก้ไขแล้ว');
+  };
+}
+
+/* =====================================================================
+   7) ค้นหา / รายการ / เมนู
+   ===================================================================== */
+const q=document.getElementById('q');
+function find(){
+  const s=q.value.trim().toLowerCase();
+  const r=s?shown().filter(h=>(h.no+' '+(h.name||'')+' '+(h.note||'')).toLowerCase().includes(s)):shown();
+  if(s&&r.length===1){ q.blur(); detail(r[0].id,true); return; }
+  openSheet(r, s?`ผลการค้นหา "${q.value}"`:'รายการบ้านที่ลงไว้');
+}
+q.addEventListener('input',()=>{ q.value.trim()?find():closeSheet(); });
+q.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); find(); q.blur(); } });
+document.getElementById('btnGo').onclick=find;
+
+const sheet=document.getElementById('sheet');
+function openSheet(rows,title){
+  document.querySelector('.sheet .sh b').textContent=title+` (${rows.length})`;
+  document.getElementById('shBody').innerHTML = rows.length
+    ? rows.slice().sort((a,b)=>(parseInt(a.no)||0)-(parseInt(b.no)||0)).map(h=>
+      `<div class="it ${cls(h)}" onclick="detail('${h.id}',true)"><b>${esc(h.no)}</b>
+        <div class="m"><div>${esc(h.name||'—')}</div>
+          <small>${h.pending?'รอส่งขึ้นระบบ':(h.status||'')} · ${esc(h.note||'หมู่ '+h.moo)}</small></div>
+        <span style="color:#98A6B5">›</span></div>`).join('')
+    : `<div class="none">ยังไม่พบข้อมูล<br><small>แตะบนแผนที่ตรงจุดบ้าน เพื่อลงพิกัดใหม่</small></div>`;
+  sheet.classList.add('on');
+}
+const listAll=()=>openSheet(shown(),'รายการบ้านที่ลงไว้');
+const closeSheet=()=>sheet.classList.remove('on');
+document.getElementById('shX').onclick=closeSheet;
+document.getElementById('fList').onclick=()=>sheet.classList.contains('on')?closeSheet():listAll();
+
+const menu=document.getElementById('menu');
+const closeMenu=()=>menu.classList.remove('on');
+document.getElementById('fLayer').onclick=()=>{
+  if(menu.classList.contains('on')){closeMenu();return;}
+  menu.innerHTML=`
+    <button onclick="pull();closeMenu();toast('กำลังดึงข้อมูลล่าสุด…')">🔄 ดึงข้อมูลล่าสุด</button>
+    <button onclick="flush();closeMenu()">⬆️ ส่งที่ค้างอยู่ (${QUEUE.length})</button>
+    <button onclick="expo()">⬇️ ส่งออก .geojson</button>
+    <button onclick="signOut()">🚪 ออกจากระบบ</button>`;
+  menu.classList.add('on');
+};
+function expo(){
+  closeMenu();
+  const rows=shown(); if(!rows.length){toast('ยังไม่มีข้อมูล');return;}
+  const fc={type:'FeatureCollection',features:rows.map(h=>{
+    const pr={'บ้านเลขที่':h.no,'หมู่':h.moo,'ตำบล':h.tambon,'อำเภอ':h.amphoe||'','จุดสังเกต':h.mark||''};
+    EXTRA.forEach(f=>{ if(h.ext&&h.ext[f.key]) pr[f.label]=h.ext[f.key]; });
+    return {type:'Feature',properties:pr,geometry:{type:'Point',coordinates:[+h.lng,+h.lat]}};
+  })};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+JSON.stringify(fc)],{type:'application/geo+json'}));
+  a.download=`หมู่${USER.moo}-${USER.tambon}-${new Date().toISOString().slice(0,10)}.geojson`; a.click();
+  toast('ส่งออก '+rows.length+' จุดแล้ว');
+}
+function signOut(){
+  if(QUEUE.length && !confirm(`ยังมี ${QUEUE.length} รายการค้างส่ง ออกจากระบบจริงหรือไม่?`)) return;
+  api('auth_logout');
+  localStorage.removeItem(K+'_user'); sessionStorage.removeItem(K+'_token'); TOKEN=''; location.href=location.pathname;
+}
+
+/* ---- ตำแหน่งของฉัน ---- */
+function locate(cb){
+  if(!navigator.geolocation){toast('อุปกรณ์ไม่รองรับ');return;}
+  toast('กำลังหาตำแหน่ง…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const ll=[+p.coords.longitude.toFixed(7),+p.coords.latitude.toFixed(7)];
+    if(!me){const el=document.createElement('div');el.className='me';
+      me=new maplibregl.Marker({element:el}).setLngLat(ll).addTo(map);} else me.setLngLat(ll);
+    if(cb) cb(ll,Math.round(p.coords.accuracy)); else map.flyTo({center:ll,zoom:19});
+  },()=>toast('เปิดสิทธิ์ตำแหน่งไม่สำเร็จ (ต้องเปิดผ่าน https)'),{enableHighAccuracy:true,timeout:12000});
+}
+document.getElementById('fGeo').onclick=()=>locate();
+document.getElementById('fAdd').onclick=()=>locate((ll,acc)=>{
+  map.flyTo({center:ll,zoom:19}); toast('ตำแหน่งปัจจุบัน ±'+acc+' ม.');
+  setTimeout(()=>addAt(ll),450);
+});
+
+boot();
+</script>
+</body>
+</html>

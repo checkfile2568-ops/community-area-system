@@ -51,7 +51,6 @@
     @media (max-width:780px) { .shell { width:min(100% - 28px,600px); } .topbar { padding-top:14px; } .classification { display:none; } main { padding-top:13px; } .grid { grid-template-columns:1fr; } .hero { border-radius:22px; } }
     @media (max-width:430px) { .portal-links { grid-template-columns:1fr; } }
   </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="shell">
@@ -64,17 +63,15 @@
         <p class="eyebrow">Community Area Information System</p>
         <h1 id="page-title">ข้อมูลพื้นที่</h1>
         <p class="lead">พื้นที่ทำงานสำหรับผู้ประสานงานที่ได้รับมอบหมาย ออกแบบให้ยืนยันตัวตนก่อนเข้าถึง และคุ้มครองข้อมูลตำแหน่งบ้านเลขที่ตามวัตถุประสงค์การปฏิบัติหน้าที่</p>
-        <div class="hero-meta" aria-label="หลักการคุ้มครองข้อมูล"><span class="pill">Google Identity</span><span class="pill">กำหนดสิทธิ์ตามบทบาท</span><span class="pill">ไม่เปิดเผยต่อสาธารณะ</span></div>
+        <div class="hero-meta" aria-label="หลักการคุ้มครองข้อมูล"><span class="pill">รหัสผู้ใช้ + PIN</span><span class="pill">กำหนดสิทธิ์ตามบทบาท</span><span class="pill">ไม่เปิดเผยต่อสาธารณะ</span></div>
       </section>
       <div class="grid">
         <section class="panel access" aria-labelledby="access-title">
           <h2 id="access-title">เข้าสู่ระบบอย่างปลอดภัย</h2>
-          <p class="copy">ใช้บัญชี Google ของผู้ปฏิบัติงาน ไม่ใช้รหัสผ่านร่วม ไม่รับรหัสผ่านผ่าน URL และไม่เก็บรหัสผ่านในระบบ</p>
+          <p class="copy">ผู้ใช้เข้าสู่ระบบด้วยรหัสผู้ใช้และ PIN ที่แอดมินกำหนด ไม่ใช้รหัสใน URL และระบบตรวจ session ทุกคำขอข้อมูล</p>
           <div class="signin-box">
-            <p class="signin-title">ยืนยันตัวตนด้วย Google</p>
-            <div id="google-button" aria-label="ปุ่มเข้าสู่ระบบด้วย Google"></div>
-            <div id="signin-status" class="status" role="status" aria-hidden="true"></div>
-            <p class="notice"><strong>หมายเหตุ:</strong> การลงชื่อเข้าใช้หน้านี้ยังไม่อนุญาตให้เข้าถึงข้อมูลพื้นที่ ระบบจะเปิดข้อมูลได้ต่อเมื่อ token ผ่านการตรวจสอบฝั่งเซิร์ฟเวอร์และบัญชีได้รับสิทธิ์เท่านั้น</p>
+            <p class="signin-title">เลือกส่วนงาน</p>
+            <p class="notice"><strong>หมายเหตุ:</strong> PIN ไม่ถูกเก็บเป็นข้อความปกติ และแอดมินสามารถระงับผู้ใช้หรือยกเลิก session ได้ทันที</p>
             <nav class="portal-links" aria-label="ทางเข้าระบบและคู่มือ"><a href="./admin.html">ส่วนผู้ดูแลระบบ</a><a href="./user.html">ส่วนผู้ใช้งาน</a><a href="./admin-guide.html">คู่มือแอดมิน</a><a href="./user-guide.html">คู่มือผู้ใช้</a></nav>
           </div>
         </section>
@@ -89,25 +86,5 @@
     </main>
     <footer class="footer"><span>●</span> ระบบกำลังอยู่ระหว่างการเปิดใช้แบบควบคุมสิทธิ์ &middot; ติดต่อผู้ดูแลระบบเมื่อไม่สามารถเข้าสู่ระบบได้</footer>
   </div>
-  <script>
-    // OAuth client IDs are public identifiers. No client secret, access token, or map data is stored here.
-    const GOOGLE_CLIENT_ID = '634557242300-qcfvk4r91tikah32rmsir5vpji8cugqu.apps.googleusercontent.com';
-    const status = document.getElementById('signin-status');
-    function decodeJwtPayload(token) {
-      const encoded = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      return JSON.parse(decodeURIComponent(atob(encoded).split('').map((character) => `%${(`00${character.charCodeAt(0).toString(16)}`).slice(-2)}`).join('')));
-    }
-    function handleCredentialResponse(response) {
-      // This display is not an authorization decision. The raw credential is deliberately not saved or sent anywhere.
-      const payload = decodeJwtPayload(response.credential);
-      const email = payload.email || 'บัญชี Google';
-      status.textContent = `ยืนยันตัวตนกับ Google แล้วสำหรับ ${email} ระบบกำลังรอการตรวจ token และสิทธิ์จากเซิร์ฟเวอร์ก่อนเปิดข้อมูลพื้นที่`;
-      status.setAttribute('aria-hidden', 'false');
-    }
-    window.onload = () => {
-      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleCredentialResponse, auto_select: false, cancel_on_tap_outside: true });
-      google.accounts.id.renderButton(document.getElementById('google-button'), { type:'standard', theme:'outline', size:'large', text:'signin_with', shape:'rectangular', width:270 });
-    };
-  </script>
 </body>
 </html>
